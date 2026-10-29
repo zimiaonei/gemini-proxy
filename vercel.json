@@ -1,8 +1,9 @@
 {
+  "regions": ["iad1"],
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "https://generativelanguage.googleapis.com/$1"
+      "destination": "/api/proxy"
     }
   ]
 }
