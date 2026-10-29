@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   const url = new URL(req.url, 'https://generativelanguage.googleapis.com');
   const targetUrl = `https://generativelanguage.googleapis.com${url.pathname}${url.search}`;
 
-  // 2. 清洗请求头：彻底剔除暴露国内真实 IP 的所有标头
+  // 2. 清洗入站请求头：剔除所有暴露真实 IP 的标头
   const newHeaders = {};
   for (const [key, value] of Object.entries(req.headers)) {
     const k = key.toLowerCase();
@@ -26,7 +26,6 @@ export default async function handler(req, res) {
   newHeaders['host'] = 'generativelanguage.googleapis.com';
 
   try {
-    // 3. 由美东机房发起纯净请求
     const fetchOptions = {
       method: req.method,
       headers: newHeaders,
@@ -38,9 +37,17 @@ export default async function handler(req, res) {
 
     const response = await fetch(targetUrl, fetchOptions);
 
-    // 4. 将 Google 的响应原样回传给 AstrBot
+    // 3. 清洗出站响应头：关键修复点！
+    // 剔除 content-encoding 和 content-length，防止客户端重复解压报错
     response.headers.forEach((val, key) => {
-      res.setHeader(key, val);
+      const k = key.toLowerCase();
+      if (
+        k !== 'content-encoding' &&
+        k !== 'content-length' &&
+        k !== 'transfer-encoding'
+      ) {
+        res.setHeader(key, val);
+      }
     });
 
     const data = await response.arrayBuffer();
